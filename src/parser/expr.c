@@ -38,7 +38,7 @@ struct Operator * get_operator(struct Slice str, struct Token * token, enum OP_m
     if (op->key == OP_NOT_FOUND) {
         logger_log(format("{s} operator '{s}' not found: ", mode == BINARY ? "Binary" : "Unary", slice_to_string(&str)), PARSER, ERROR);
         print("{s}\n", token_to_string(token));
-        exit(1);
+        ASSERT1(0);
     }
 
     return op;
@@ -80,6 +80,7 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
 
     while (1) {
         switch (parser->lexer.token.type) {
+            case TOKEN_INTRINSIC:
             case TOKEN_ID:
             {
                 if (mode == BINARY) {
@@ -103,16 +104,16 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
 
                 if (op1->enclosed == ENCLOSED) {
                     if (!flag) { // open enclosed operator
-                        parser_eat(parser, parser->lexer.token.type);
+                        parser_eat(parser, TOKEN_OP);
                         
                         struct Deque temp_d = init_deque(sizeof(struct Operator *));
                         struct List temp_l = init_list(sizeof(struct AST *));
-                        push_back(&temp_d, &op1);
+                        push_back(&temp_d, op1);
 
                         node = init_ast(AST_OP, parser->current_scope);
                         temp = init_ast(AST_EXPR, parser->current_scope);
                         node->value.op.op = *op1;
- 
+                        
                         temp->value.expr.children = _parser_parse_expr(parser, &temp_l, &temp_d, -1);
                         node->value.op.right = temp; 
                     } else { // closing enclosed operator
@@ -121,6 +122,7 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
                                 ASSERT(sizeof(op1->key) != (sizeof(op_conversion) / sizeof(op_conversion[0])), "Possibly invalid EXIT_ON_KEY:");
                                 goto exit;
                             }
+                            // if this is the only operator in the deque
                             if (operators->size == 1) {
                                 println("[Parser] Unmatched enclosed operator: {s}\n", token_to_string(&parser->lexer.token));
                                 exit(1);
@@ -155,7 +157,7 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
                     list_push(output, node);
                     mode = BINARY;
                     break;
-                }
+                } 
 
                 push_back(operators, op1);
 
@@ -196,6 +198,7 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
                 break;
             case TOKEN_EOF:
             case TOKEN_LINEBREAK:
+            case TOKEN_COLON:
             case TOKEN_LBRACE:
             case TOKEN_RBRACE:
                 goto exit;

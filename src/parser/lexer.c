@@ -37,9 +37,18 @@ void lexer_advance(struct Lexer * lexer) {
         exit(1);
     }
 
-    lexer->index += 1;
-    lexer->c = lexer->src[lexer->index];
     lexer->pos += 1;
+    lexer->index += 1;
+    if ((lexer->c = lexer->src[lexer->index]) == '\n') {
+        lexer->line += 1;
+        lexer->pos = 0;
+    }
+}
+
+void lexer_update(struct Lexer * lexer, size_t forward) {
+    while (forward--) {
+        lexer_advance(lexer);
+    }
 }
 
 void lexer_advance_as(struct Lexer * lexer, enum token_t type) {
@@ -119,10 +128,13 @@ void lexer_parse_operator(struct Lexer * lexer) {
             }
         }
 
+        c = lexer->src[lexer->index + length];
         length += 1;
-        c = lexer->c;
-        lexer_advance(lexer);
     }
+
+    struct Slice slice = init_slice(start_of_token, length_found);
+
+    lexer_update(lexer, length_found - 1);
 
     // if length is 0 then there was no match as length is the length of an existing operator
     if (length_found == 0) {
@@ -137,6 +149,9 @@ void lexer_parse_operator(struct Lexer * lexer) {
 void lexer_parse_id(struct Lexer * lexer) {
     size_t line = lexer->line, pos = lexer->pos;
     char * start_of_token = lexer->src + lexer->index;
+
+    // skip first since that must already be valid since this function has been called
+    lexer_advance(lexer);
     while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_') {
         lexer_advance(lexer);
     }
@@ -167,8 +182,6 @@ void lexer_next_token(struct Lexer * lexer) {
             break;
         case '\n':
             lexer_advance_as(lexer, TOKEN_LINEBREAK);
-            lexer->pos = 1;
-            lexer->line += 1;
             break;
         case '{':
             lexer_advance_as(lexer, TOKEN_LBRACE); break;

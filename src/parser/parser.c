@@ -40,7 +40,11 @@ struct AST * parser_parse_variable(struct Parser * parser) {
 
     struct a_variable * variable = &ast->value.variable;
     variable->name = parser->lexer.token.value;
-    parser_eat(parser, TOKEN_ID);
+    if (parser_token_is_type(parser, TOKEN_INTRINSIC)) {
+        parser_eat(parser, TOKEN_INTRINSIC);
+    } else {
+        parser_eat(parser, TOKEN_ID);
+    }
 
     return ast;
 }
@@ -70,7 +74,7 @@ struct AST * parser_parse_declaration(struct Parser * parser) {
         node = op->left;
     }
 
-    if (node->type == AST_VARIABLE) {
+    if (node->type != AST_VARIABLE) {
         logger_log(format("{2i::} LHS of declaration must be a variable", line, pos), PARSER, ERROR);
         ASSERT1(0);
     }
@@ -104,14 +108,24 @@ struct AST * parser_parse_if(struct Parser * parser) {
         list_push(&_if->bodies, parser_parse_scope(parser));
     }
 
-    print_ast_tree(ast);
-
     return ast;
 }
 
 struct AST * parser_parse_for(struct Parser * parser) {
-    ASSERT1(0);
-    return NULL;
+    struct AST * ast = init_ast(AST_FOR, parser->current_scope);
+    struct a_for * _for = &ast->value._for;
+
+    parser_eat(parser, TOKEN_ID);
+    _for->condition = parser_parse_expr(parser);
+
+    if (parser_token_is_type(parser, TOKEN_COLON)) {
+        parser_eat(parser, TOKEN_COLON);
+        _for->_continue = parser_parse_expr(parser);
+    }
+
+    _for->body = parser_parse_scope(parser);
+
+    return ast;
 }
 
 
@@ -129,11 +143,11 @@ struct AST * parser_parse_statement(struct Parser * parser) {
     char * src = parser->lexer.token.value.start;
     size_t length = parser->lexer.token.value.length;
 
-    /* if (!strncmp(src, "let", length)) { */
-    /*     return parser_parse_declaration(parser); */
-    /* } else if (!strncmp(src, "for", length)) { */
-    /*     return parser_parse_for(parser); */
-     if (!strncmp(src, "if", length)) {
+    if (!strncmp(src, "let", length)) {
+        return parser_parse_declaration(parser);
+    } else if (!strncmp(src, "for", length)) {
+        return parser_parse_for(parser);
+    } else if (!strncmp(src, "if", length)) {
         return parser_parse_if(parser);
     } else if (!strncmp(src, "return", length)) {
         return parser_parse_return(parser);
@@ -188,8 +202,8 @@ struct AST * parser_parse_function(struct Parser * parser) {
 
 void parser_parse_root(struct Parser * parser) {
     parser->current_scope = &parser->root;
-
     struct a_root * root = &parser->root.value.root;
+    root->nodes = init_list(sizeof(struct AST));
 
     while (!parser_token_is_type(parser, TOKEN_EOF)) {
         if (parser_token_is_type(parser, TOKEN_LINEBREAK)) {

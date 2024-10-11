@@ -13,7 +13,7 @@ fn fib(n) {
 
     for (i < n) : (i++) {
         temp = curr
-        curr += prev
+        curr = curr + prev
         prev = temp
     }
 
