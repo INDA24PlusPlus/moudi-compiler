@@ -1,0 +1,28 @@
+fn fib(n) {
+    if n == 0 {
+        return 0
+    } else if n == 1 || n == 2 {
+        return 1
+    }
+
+    // start at fib(3)
+    let i = 3
+    let temp = 0
+    let prev = 1
+    let curr = 2
+
+    for (i < n) : (i++) {
+        temp = curr
+        curr += prev
+        prev = temp
+    }
+
+    return curr
+}
+
+fn main() {
+    let a = 10 + 5
+    let b = fib(a)
+
+    #print(b)
+}

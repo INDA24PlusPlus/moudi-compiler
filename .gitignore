@@ -1,0 +1,16 @@
+*
+
+!includes
+!includes/**
+
+!src
+!/src/**
+
+!examples
+!/examples/**
+
+!.gitignore
+!.gitmodules
+!CMakeLists.txt
+!start.sh
+
