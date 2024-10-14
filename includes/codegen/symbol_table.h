@@ -16,4 +16,6 @@ struct AST; // forward definition to avoid circular inclusion
 
 struct symbol_table init_symbol_table();
 void symbol_table_add(struct symbol_table * sym_table, struct AST * item);
-char find_symbol(struct AST * scope, struct Slice * cmp);
+
+char find_symbol(struct AST * scope, char * cmp, size_t length);
+char find_symbol_slice(struct AST * scope, struct Slice * cmp);

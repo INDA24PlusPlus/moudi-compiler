@@ -51,7 +51,7 @@ void checker_check_variable(struct AST * ast) {
     ASSERT1(ast->type == AST_VARIABLE);
     struct a_variable variable = ast->value.variable;
 
-    if (!find_symbol(ast->scope, &variable.name)) {
+    if (!find_symbol_slice(ast->scope, &variable.name)) {
         logger_log(format("Unknown symbol '{s}'.\n" GREY "Tips: Did you forget to declare it as a variable?" RESET, slice_to_string(&variable.name)), CHECKER, ERROR);
     }
 }
@@ -172,7 +172,12 @@ void checker_check(struct AST * ast) {
         symbol_table_add(&root->sym_table, list_at(&root->nodes, i));
     }
 
-    // check functions
+    const char main_str[] = "main";
+    if (!find_symbol(ast, "main", sizeof(main_str) / sizeof(char))) {
+        logger_log("No main function entry point found!", CHECKER, ERROR);
+        exit(1);
+    }
+
     for (size_t i = 0; i < length; ++i) {
         checker_check_function(list_at(&root->nodes, i));
     }

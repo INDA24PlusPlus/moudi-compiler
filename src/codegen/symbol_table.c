@@ -37,7 +37,11 @@ void symbol_table_add(struct symbol_table * sym_table, struct AST * item) {
     list_push(&sym_table->list, init_symbol_entry(copy_slice(slice)));
 }
 
-char find_symbol(struct AST * scope, struct Slice * cmp) {
+char find_symbol_slice(struct AST * scope, struct Slice * cmp) {
+    return find_symbol(scope, cmp->start, cmp->length);
+}
+
+char find_symbol(struct AST * scope, char * cmp, size_t length) {
     ASSERT1(scope->type == AST_SCOPE || scope->type == AST_ROOT);
     struct symbol_table table;
     if (scope->type == AST_SCOPE) {
@@ -50,13 +54,13 @@ char find_symbol(struct AST * scope, struct Slice * cmp) {
 
     for (size_t i = 0; i < table.list.size; ++i) {
         slice = ((struct symbol_entry *) list_at(&table.list, i))->ID;
-        if (slice->length == cmp->length && strncmp(slice->start, cmp->start, slice->length) == 0) {
+        if (slice->length == length && strncmp(slice->start, cmp, slice->length) == 0) {
             return 1;
         }
     }
     
     if (scope->type == AST_SCOPE) {
-        return find_symbol(scope->scope, cmp);
+        return find_symbol(scope->scope, cmp, length);
     }
 
     return 0;
