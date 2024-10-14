@@ -10,7 +10,7 @@ set(CMAKE_C_FLAGS_RELEASE "-Wall")
 
 message(STATUS "FLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 
-add_subdirectory("submodules/String-Formatter")
+add_subdirectory("submodule/String-Formatter")
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
 
@@ -24,7 +24,7 @@ add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 # Include header files
 target_include_directories(compiler PRIVATE 
 	${CMAKE_CURRENT_SOURCE_DIR}/includes
-    ${CMAKE_CURRENT_SOURCE_DIR}/submodules/String-Formatter/include)
+    ${CMAKE_CURRENT_SOURCE_DIR}/submodule/String-Formatter/include)
 
 # Link libraries
 target_link_libraries(compiler PRIVATE fmt)
