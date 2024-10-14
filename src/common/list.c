@@ -1,12 +1,15 @@
 #include "common/list.h"
+#include "common/logger.h"
 #include "fmt.h"
 #include "parser/AST.h"
 
-struct List init_list(size_t item_size) {	
+struct List init_list(size_t item_size) {
+    ASSERT1(item_size != 0);
 	return (struct List) {
         .size = 0,
         .capacity = 0,
-        .item_size = item_size
+        .item_size = item_size,
+        .items = NULL
     };
 }
 
@@ -20,13 +23,18 @@ void free_list(struct List * list, void item_free_function(void *)) {
 }
 
 void list_push(struct List * list, void * item) {
-	if (!list->size) {
+	if (!list->capacity) {
+        ASSERT1(list->item_size != 0);
 		list->items = malloc(list->item_size);
-		list->capacity = 1;
+        list->capacity = 1;
 	} else if (list->capacity < list->size + 1){
+        ASSERT1(list->capacity != 0);
+        ASSERT1(list->item_size != 0);
 		list->capacity *= 2;
 		list->items = realloc(list->items, list->capacity * list->item_size);
 	}
+
+    ASSERT1(list->items != NULL);
 
 	list->items[list->size++] = item;
 }

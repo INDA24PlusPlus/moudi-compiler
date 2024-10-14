@@ -6,7 +6,7 @@
 #include "parser/operators.h"
 
 struct Parser {
-    struct AST root;
+    struct AST * root;
     struct AST * current_scope;
     struct Lexer lexer;
 };
@@ -23,6 +23,6 @@ struct AST * parser_parse_operator(struct Parser * parser);
 struct AST * parser_parse_scope(struct Parser * parser);
 
 struct Parser init_parser(char * filepath);
-struct AST parser_parse(char * filepath);
+struct AST * parser_parse(char * filepath);
 
 void parser_parse_root(struct Parser * parser);

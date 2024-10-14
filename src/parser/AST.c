@@ -1,7 +1,9 @@
 #include "parser/AST.h"
+#include "codegen/symbol_table.h"
 #include "common/common.h"
 #include "common/list.h"
 #include "common/logger.h"
+#include "fmt.h"
 #include "utils/slice.h"
 #include "utils/string.h"
 #include <stdlib.h>
@@ -14,12 +16,17 @@
 GENERATE_ENUM_TO_STR_FUNC_BODY(AST_type, AST_FOREACH);
 
 struct AST * init_ast(enum AST_type type, struct AST * scope) {
-    ASSERT1(scope != NULL);
-    ASSERT1(scope->type == AST_SCOPE || scope->type == AST_ROOT);
-    struct AST * ast = calloc(1, sizeof(struct AST));
-    ast->type = type;
-    ast->scope = scope;
-    ast->value = init_ast_type_value(type);
+    if (type != AST_ROOT) {
+        ASSERT1(scope != NULL);
+        ASSERT1(scope->type == AST_SCOPE || scope->type == AST_ROOT);
+    }
+
+    struct AST * ast = malloc(sizeof(struct AST));
+    *ast = (struct AST) {
+        .type = type,
+        .scope = scope,
+        .value = init_ast_type_value(type)
+    };
 
     return ast;
 }
@@ -27,13 +34,15 @@ struct AST * init_ast(enum AST_type type, struct AST * scope) {
 union AST_value init_ast_type_value(enum AST_type type) {
     union AST_value value = {0};
 
-    struct List ast_list_default = init_list(sizeof(struct AST));
+    struct List ast_list_default = init_list(sizeof(struct AST *));
     
     switch (type) {
-        case AST_ROOT: 
-            value.root = (struct a_root) {.nodes = ast_list_default}; break;
+        case AST_ROOT:
+            value.root = (struct a_root) {.nodes = ast_list_default, .sym_table = init_symbol_table()}; break;
+        case AST_FUNCTION:
+            value.function = (struct a_function) {.arguments = ast_list_default}; break;
         case AST_SCOPE:
-            value.scope = (struct a_scope) {.nodes = ast_list_default, .variables = ast_list_default}; break;
+            value.scope = (struct a_scope) {.nodes = ast_list_default, .sym_table = init_symbol_table()}; break;
         case AST_EXPR:
             value.expr = (struct a_expr) {.children = ast_list_default}; break;
         case AST_IF:
@@ -60,7 +69,7 @@ void _print_ast_tree(struct AST * ast, String * pad, char is_last) {
         return;
     }
 
-    print_ast("{s}\n", ast);
+    println("{s}", ast_to_string(ast));
 
     // create a new pointer so that this will not influence the next children
     pad = string_copy(pad);
@@ -87,7 +96,9 @@ void _print_ast_tree(struct AST * ast, String * pad, char is_last) {
 
             String * next_pad = string_copy(pad);
 
-            _print_ast_tree(func->arguments, next_pad, 0);
+            for (size_t i = 0; i < func->arguments.size; ++i) {
+                _print_ast_tree(list_at(&func->arguments, i), next_pad, 0);
+            }
             _print_ast_tree(func->body, next_pad, 1);
             free_string(&next_pad);
 
@@ -97,9 +108,8 @@ void _print_ast_tree(struct AST * ast, String * pad, char is_last) {
         {
             struct a_scope * scope = &ast->value.scope;
             String * next_pad = string_copy(pad);
-            struct List list = list_combine(&scope->variables, &scope->nodes);
 
-            AST_TREE_PRINT_CHILDREN(list, next_pad);
+            AST_TREE_PRINT_CHILDREN(scope->nodes, next_pad);
             free_string(&next_pad);
         } break;
         case AST_DECLARATION:
@@ -197,7 +207,7 @@ const char * ast_type_to_str_ast(struct AST * ast) {
     return AST_type_to_string(ast->type);
 }
 
-void print_ast(const char * template, struct AST * ast) {
+char * ast_to_string(struct AST * ast) {
 	const char * type_str = AST_type_to_string(ast->type);
     
     char * prefix_str = format(RED "{s}" RESET ": ", type_str);
@@ -207,13 +217,13 @@ void print_ast(const char * template, struct AST * ast) {
         case AST_FUNCTION:
         {
             struct a_function * func = &ast->value.function;
-            formatted_str = format("{s} " GREY "<" BLUE "Name" RESET ": {s}" GREY ">" RESET, prefix_str, slice_to_string(&func->name));
+            formatted_str = format("{s} " GREY "<" BLUE "Name" RESET ": {s}, " BLUE "Arguments" RESET ": {i}" GREY ">" RESET, prefix_str, slice_to_string(&func->name), func->arguments.size);
             break;
         }
         case AST_SCOPE:
         {
             struct a_scope * scope = &ast->value.scope;
-            formatted_str = format("{s} " GREY "<" BLUE "Variables" RESET ": {i}, " BLUE "Nodes" RESET ": {i}" GREY ">" RESET, prefix_str, scope->variables.size, scope->nodes.size);
+            formatted_str = format("{s} " GREY "<" BLUE "Nodes" RESET ": {i}" GREY ">" RESET, prefix_str, scope->nodes.size);
         } break;
         case AST_OP:
         {
@@ -250,7 +260,10 @@ void print_ast(const char * template, struct AST * ast) {
         }
     }
 
-	print(template, formatted_str);
+    const char * scope_type_str = ast_type_to_str_ast(ast->scope);
+    char * ast_string = format("{s} | " GREY "<" RED "{s}" GREY ">" RESET, formatted_str, scope_type_str);
     free(prefix_str);
 	free(formatted_str);
+
+    return ast_string;
 }

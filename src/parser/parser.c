@@ -11,7 +11,7 @@
 
 struct Parser init_parser(char * filepath) {
     return (struct Parser) {
-        .root = (struct AST) {.type = AST_ROOT},
+        .root = init_ast(AST_ROOT, NULL),
         .lexer = init_lexer(filepath)
     };
 }
@@ -65,21 +65,9 @@ struct AST * parser_parse_declaration(struct Parser * parser) {
     size_t line = parser->lexer.line, pos = parser->lexer.pos;
     parser_eat(parser, TOKEN_ID);
 
+    decl->variable = parser_parse_variable(parser);
+    parser_eat(parser, TOKEN_EQUAL);
     decl->expression = parser_parse_expr(parser);
-    struct a_expr * expr = &decl->expression->value.expr;
-    node = list_at(&expr->children, 0);
-
-    if (node->type == AST_OP) {
-        struct a_op * op = &node->value.op;
-        node = op->left;
-    }
-
-    if (node->type != AST_VARIABLE) {
-        logger_log(format("{2i::} LHS of declaration must be a variable", line, pos), PARSER, ERROR);
-        ASSERT1(0);
-    }
-
-    decl->variable = node;
 
     return ast;
 }
@@ -185,7 +173,8 @@ struct AST * parser_parse_scope(struct Parser * parser) {
 }
 
 struct AST * parser_parse_function(struct Parser * parser) {
-    struct AST * ast = init_ast(AST_FUNCTION, parser->current_scope);
+    struct AST * ast = init_ast(AST_FUNCTION, parser->current_scope),
+               * node;
 
     struct a_function * function = &ast->value.function;
 
@@ -193,17 +182,27 @@ struct AST * parser_parse_function(struct Parser * parser) {
     function->name = parser->lexer.token.value;
     parser_eat(parser, TOKEN_ID);
     parser_eat(parser, TOKEN_LPAREN);
-    function->arguments = parser_parse_expr_exit_on(parser, PARENTHESES);
+
+    while (parser_token_is_type(parser, TOKEN_ID)) {
+        list_push(&function->arguments, parser_parse_variable(parser));
+
+        if (parser_token_is_type(parser, TOKEN_COMMA)) {
+            parser_eat(parser, TOKEN_COMMA);
+        }
+    }
+
+    parser_eat(parser, TOKEN_RPAREN);
+    
     function->body = parser_parse_scope(parser);
 
-    parser->current_scope = &parser->root;
+    parser->current_scope = ast->scope;
     return ast;
 }
 
 void parser_parse_root(struct Parser * parser) {
-    parser->current_scope = &parser->root;
-    struct a_root * root = &parser->root.value.root;
-    root->nodes = init_list(sizeof(struct AST));
+    parser->current_scope = parser->root;
+    struct a_root * root = &parser->root->value.root;
+    root->nodes = init_list(sizeof(struct AST *));
 
     while (!parser_token_is_type(parser, TOKEN_EOF)) {
         if (parser_token_is_type(parser, TOKEN_LINEBREAK)) {
@@ -221,7 +220,7 @@ void parser_parse_root(struct Parser * parser) {
     }
 }
 
-struct AST parser_parse(char * filepath) {
+struct AST * parser_parse(char * filepath) {
     struct Parser parser = init_parser(filepath);
 
     parser_parse_root(&parser);

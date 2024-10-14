@@ -1,5 +1,6 @@
 #pragma once
 
+#include "codegen/symbol_table.h"
 #include "common/common.h"
 #include "utils/slice.h"
 #include "operators.h"
@@ -8,17 +9,18 @@
 
 struct a_root {
     struct List nodes;
+    struct symbol_table sym_table;
 };
 
 struct a_function {
     struct Slice name;
     struct AST * body;
-    struct AST * arguments;
+    struct List arguments;
 };
 
 struct a_scope {
-    struct List variables;
     struct List nodes;
+    struct symbol_table sym_table;
 };
 
 struct a_declaration {
@@ -102,5 +104,5 @@ struct AST * init_ast(enum AST_type type, struct AST * scope);
 union AST_value init_ast_type_value(enum AST_type type);
 void free_ast(struct AST * ast);
 
-void print_ast(const char * template, struct AST * ast);
+char * ast_to_string(struct AST * ast);
 void print_ast_tree(struct AST * ast);
