@@ -1,0 +1,6 @@
+fn main() {
+    let a = 2
+    a = a + a
+
+    return a
+}

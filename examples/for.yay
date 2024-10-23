@@ -1,0 +1,10 @@
+fn main() {
+    let i = 0
+    let a = 2
+
+    for (i < 5) : (i++) {
+        a = a + a
+    }
+
+    return a
+}

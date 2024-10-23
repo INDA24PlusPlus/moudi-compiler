@@ -24,5 +24,7 @@ fn main() {
     let a = 10 + 5
     let b = fib(a)
 
-    #print(b)
+    // #print(b)
+
+    return b
 }

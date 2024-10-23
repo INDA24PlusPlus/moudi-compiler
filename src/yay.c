@@ -1,8 +1,10 @@
 #include "yay.h"
+#include "fmt.h"
 #include "parser/AST.h"
 #include "parser/parser.h"
 #include "codegen/checker.h"
 #include "codegen/generator.h"
+#include <stdlib.h>
 #include <sys/time.h>
 
 struct timeval t_start, t_stop;
@@ -36,11 +38,18 @@ void yay_compile(char * filepath) {
     total += time;
     asprintf(&checker_time, "Time for checker:\t%.3fms", (double)time / 1000);
 
+    print_ast_tree(ast);
+
     start_timer();
     generate_qed(ast);
     time = stop_timer();
     total += time;
     asprintf(&gen_time, "Time for generator:\t%.3fms", (double)time / 1000);
+
+    int res = system("qbe out.qbe > out.s");
+    if (res != 256) {
+        system("cc out.s");
+    }
 
     puts("-------------------------------------");
     puts(parser_time);

@@ -21,6 +21,7 @@ struct a_function {
 struct a_scope {
     struct List nodes;
     struct symbol_table sym_table;
+    char returns;
 };
 
 struct a_declaration {

@@ -121,11 +121,11 @@ void checker_check_expr(struct AST * ast) {
 void checker_check_scope(struct AST * ast) {
     ASSERT1(ast != NULL);
     ASSERT1(ast->type == AST_SCOPE);
-    struct a_scope scope = ast->value.scope;
+    struct a_scope * scope = &ast->value.scope;
     struct AST * node = NULL;
 
-    for (size_t i = 0; i < scope.nodes.size; ++i) {
-        node = list_at(&scope.nodes, i);
+    for (size_t i = 0; i < scope->nodes.size; ++i) {
+        node = list_at(&scope->nodes, i);
         switch (node->type) {
             case AST_EXPR:
                 checker_check_expr(node); break;
@@ -136,6 +136,11 @@ void checker_check_scope(struct AST * ast) {
             case AST_FOR:
                 checker_check_for(node); break;
             case AST_RETURN:
+                if (i + 1 != scope->nodes.size) {
+                    logger_log("Return is only allowed at the end of a scope", CHECKER, ERROR);
+                    exit(1);
+                }
+                scope->returns = 1;
                 checker_check_return(node); break;
             default:
                 logger_log(format("Invalid scope child '{s}'", AST_type_to_string(node->type)), CHECKER, ERROR);
@@ -158,8 +163,7 @@ void checker_check_function(struct AST * ast) {
 
     checker_check_scope(func->body);
 
-    struct AST * last_func_scope_node = list_at(&scope->nodes, -1);
-    if (last_func_scope_node->type != AST_RETURN) {
+    if (!scope->returns) {
         logger_log(format("Function '{s}' must have a return statement before the end of scope", slice_to_string(&func->name)), CHECKER, ERROR);
         exit(1);
     }
