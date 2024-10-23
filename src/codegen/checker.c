@@ -157,6 +157,12 @@ void checker_check_function(struct AST * ast) {
     }
 
     checker_check_scope(func->body);
+
+    struct AST * last_func_scope_node = list_at(&scope->nodes, -1);
+    if (last_func_scope_node->type != AST_RETURN) {
+        logger_log(format("Function '{s}' must have a return statement before the end of scope", slice_to_string(&func->name)), CHECKER, ERROR);
+        exit(1);
+    }
 }
 
 void checker_check(struct AST * ast) {
@@ -173,7 +179,7 @@ void checker_check(struct AST * ast) {
     }
 
     const char main_str[] = "main";
-    if (!find_symbol(ast, "main", sizeof(main_str) / sizeof(char))) {
+    if (!find_symbol(ast, "main", sizeof(main_str) / sizeof(char) - 1)) {
         logger_log("No main function entry point found!", CHECKER, ERROR);
         exit(1);
     }
