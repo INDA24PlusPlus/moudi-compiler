@@ -8,16 +8,19 @@
 #include "parser/AST.h"
 #include "parser/operators.h"
 #include "utils/slice.h"
+#include "utils/string.h"
 
 FILE * file = NULL;
+String * data;
 size_t temp_expr_counter = 0;
 size_t if_counter = 0;
 size_t for_counter = 0;
+size_t string_counter = 0;
 
 #define LAST_TEMP_EXPR (temp_expr_counter - 1)
 
 void generate_temp_variable_prefix() {
-    writef(file, "%_{i} =w ", temp_expr_counter++);
+    writef(file, "%_{i} =l ", temp_expr_counter++);
 }
 
 void generate_number_variable(struct Slice * number) {
@@ -36,6 +39,12 @@ void generate_variable(struct AST * ast) {
     free(variable_name_str);
 }
 
+void generate_string_data(struct AST * ast) {
+    struct a_string string = ast->value.string;
+    
+    string_append(data, format("data $str_{i} = {c}b \"{s}\", b 0}\n", string_counter, '{', slice_to_string(&string.value)));
+}
+
 void generate_call(struct AST * ast) {
     writef(file, "# start of call\n");
     struct a_op op = ast->value.op;
@@ -43,13 +52,19 @@ void generate_call(struct AST * ast) {
     ASSERT1(op.left != NULL);
     ASSERT1(op.right != NULL);
     struct a_expr args_ast = op.right->value.expr;
-    struct List arg_variables = init_list(sizeof(size_t));
+    struct List arg_variables = init_list(sizeof(long));
     struct AST * node = NULL;
 
     for (size_t i = 0; i < args_ast.children.size; ++i) {
-        generate_expr_node(list_at(&args_ast.children, i));
-        println("{i}: {i}", i, temp_expr_counter);
-        list_push(&arg_variables, (void *) LAST_TEMP_EXPR);
+        node = list_at(&args_ast.children, i);
+        if (node->type == AST_STRING) {
+            string_counter += 1;
+            generate_string_data(node);
+            list_push(&arg_variables, (void *) -(string_counter));
+        } else {
+            generate_expr_node(node);
+            list_push(&arg_variables, (void *) LAST_TEMP_EXPR);
+        }
     }
 
     ASSERT1(op.left->type == AST_VARIABLE);
@@ -63,7 +78,12 @@ void generate_call(struct AST * ast) {
         if (i != 0) {
             writef(file, ", ");
         }
-        writef(file, "w %_{i}", list_at(&arg_variables, i));
+        long number = (long) list_at(&arg_variables, i);
+        if (number < 0) {
+            writef(file, "l $str_{i}", -number);
+        } else {
+            writef(file, "l %_{i}", number);
+        }
     }
     writef(file, ")\n");
 }
@@ -76,7 +96,7 @@ void generate_increment(struct AST * ast) {
 
     generate_temp_variable_prefix();
     writef(file, "add %{s}, 1\n", var_name_str);
-    writef(file, "%{s} =w copy %_{i}\n", var_name_str, LAST_TEMP_EXPR);
+    writef(file, "%{s} =l copy %_{i}\n", var_name_str, LAST_TEMP_EXPR);
     
     free(var_name_str);
 }
@@ -87,7 +107,7 @@ void generate_assignment(struct AST * ast, size_t expr_number) {
 
     char * var_name_str = slice_to_string(&variable.name);
 
-    writef(file, "%{s} =w copy %_{i}\n", var_name_str, expr_number);
+    writef(file, "%{s} =l copy %_{i}\n", var_name_str, expr_number);
     
     free(var_name_str);
 }
@@ -133,7 +153,7 @@ void generate_op(struct AST * ast) {
         case LOGICAL_OR:
             generate_binary_operator("or", left_expr, right_expr); break;
         case LESS_THAN:
-            generate_binary_operator("csltw", left_expr, right_expr); break;
+            generate_binary_operator("csltl", left_expr, right_expr); break;
         default:
              ASSERT(0, format("Unimplemented operator generation: '{s}'", ast_to_string(ast)));
     }
@@ -155,7 +175,7 @@ void generate_for(struct AST * ast) {
     writef(file, "@for_{i}_start\n", for_number);
     generate_expression(_for.condition);
     writef(file, "jnz %_{i}, @for_{i}_body, @for_{i}_end\n"
-                 "@for_{i}_body\n", for_number, for_number, for_number, for_number);
+                 "@for_{i}_body\n", LAST_TEMP_EXPR, for_number, for_number, for_number);
     generate_scope(_for.body);
     writef(file, "@for_{i}_continue\n", for_number);
     if (_for._continue != NULL) {
@@ -223,7 +243,7 @@ void generate_declaration(struct AST * ast) {
     
     ASSERT(prev_value != temp_expr_counter, "Unexpanded expression or something?");
 
-    writef(file, "%{s} =w copy %_{i}\n",
+    writef(file, "%{s} =l copy %_{i}\n",
             slice_to_string(&declaration.variable->value.variable.name),
             temp_expr_counter - 1);
 }
@@ -261,7 +281,7 @@ void generate_function(struct AST * ast) {
     size_t i = 0;
     while (i < function.arguments.size) {
         node = list_at(&function.arguments, i);
-        writef(file, "w %{s}", slice_to_string(&node->value.variable.name));
+        writef(file, "l %{s}", slice_to_string(&node->value.variable.name));
 
         if (++i == function.arguments.size) {
             break;
@@ -280,6 +300,7 @@ void generate_function(struct AST * ast) {
 void generate_qed(struct AST * ast) {
     ASSERT1(ast->type == AST_ROOT);
 
+    data = init_string("");
     file = open_file("out.qbe", "wb");
     struct a_root root = ast->value.root;
     
@@ -287,6 +308,7 @@ void generate_qed(struct AST * ast) {
         generate_function(list_at(&root.nodes, i));
     }
 
+    writef(file, "\n# Data:\n{s}", data->_ptr);
     fclose(file);
 
     size_t length = 0;

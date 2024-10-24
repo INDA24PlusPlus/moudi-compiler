@@ -21,10 +21,10 @@ fn fib(n) {
 }
 
 fn main() {
-    let a = 10 + 5
-    let b = fib(a)
+    let i = 0
+    for (i < 50) : (i++) {
+        #print("fib(%i) == %lld\n", i, fib(i))
+    }
 
-    // #print(b)
-
-    return b
+    return 0
 }

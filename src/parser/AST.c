@@ -247,6 +247,14 @@ char * ast_to_string(struct AST * ast) {
             free(number_value);
             break;
         }
+        case AST_STRING:
+        {
+            struct a_string * string = &ast->value.string;
+            char * string_value = slice_to_string(&string->value);
+            formatted_str = format("{s}" GREY "<" BLUE "Value" RESET ": \"{s}\"" GREY ">" RESET, prefix_str, string_value);
+            free(string_value);
+            break;
+        }
         case AST_DECLARATION:
         {
             struct a_declaration * declaration = &ast->value.declaration;

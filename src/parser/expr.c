@@ -1,3 +1,4 @@
+#include "common/list.h"
 #include "fmt.h"
 #include "parser/parser.h"
 #include "common/logger.h"
@@ -25,7 +26,6 @@ struct Operator * str_to_operator(struct Slice str, enum OP_mode mode, char * en
         }
 
         if ((mode == OP_TYPE_ANY || op_conversion[i].mode == mode) && op_str[str.length] == '\0' && !strncmp(str.start, op_str, str.length)) {
-            println("str({i}): '{s}'", str.length, op_str);
             return &op_conversion[i];
         }
     }
@@ -44,8 +44,6 @@ struct Operator * get_operator(struct Slice str, struct Token * token, enum OP_m
         print("{s}\n", token_to_string(token));
         ASSERT1(0);
     }
-
-    println("str: '{s}', key: {i}", slice_to_string(&str), op->key);
 
     return op;
 }
@@ -100,7 +98,11 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
             case TOKEN_NUMBER:
             {
                 list_push(output, parser_parse_number(parser));
-
+                mode = BINARY;
+            } break;
+            case TOKEN_STRING:
+            {
+                list_push(output, parser_parse_string(parser));
                 mode = BINARY;
             } break;
             case TOKEN_OP:
@@ -170,7 +172,6 @@ struct List _parser_parse_expr(struct Parser * parser, struct List * output, str
                 mode = op1->mode == UNARY_POST ? BINARY : UNARY_PRE;
                 parser_eat(parser, TOKEN_OP);
             } break;
-            /* case TOKEN_COLON: */
             case TOKEN_COMMA:
             {
                 while (operators->size && (op2 = deque_back(operators))->enclosed != ENCLOSED) {

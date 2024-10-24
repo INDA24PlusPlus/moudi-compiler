@@ -7,7 +7,7 @@
 #include "parser/AST.h"
 #include "parser/operators.h"
 #include "utils/slice.h"
-#include <string.h>
+#include "codegen/intrinsics.h"
 
 void checker_check_return(struct AST * ast) {
     ASSERT1(ast != NULL);
@@ -29,13 +29,25 @@ void checker_check_op(struct AST * ast) {
         } else if (op.left->value.variable.name.start[0] == '#') {
             // check if it is a valid intrinsic
             struct Slice name = op.left->value.variable.name;
-            if (strncmp(name.start, "#print", name.length) == 0) {}
-            else {
+            if (strncmp(name.start, "#print", name.length) == 0) {
+                ast->value.op.left->value.variable.name = init_slice(print_intrinsic_to_c_func, sizeof(print_intrinsic_to_c_func));
+            } else {
                 logger_log(format("Invalid intrinsic: \"{s}\"", slice_to_string(&name)), CHECKER, ERROR);
                 exit(1);
             }
 
-            checker_check_expr_node(op.right);
+            ASSERT1(op.right->type == AST_EXPR);
+            struct a_expr expr = op.right->value.expr;
+            struct AST * node = NULL;
+
+            // skip AST_STRING as these will be asserted and are only allowed here directly in intrinsics
+            for (size_t i = 0; i < expr.children.size; ++i) {
+                node = list_at(&expr.children, i);
+                if (node->type != AST_STRING) {
+                    checker_check_expr_node(node);
+                }
+            }
+
             return;
         }
     } else if (op.op.key == ASSIGNMENT) {
@@ -106,6 +118,9 @@ void checker_check_expr_node(struct AST * ast) {
         case AST_VARIABLE:
             checker_check_variable(ast); break;
         case AST_NUMBER: break;
+        case AST_STRING:
+            logger_log("String literals are only allowed in intrinsic function calls", CHECKER, ERROR);
+            exit(1);
         default:
             logger_log(format("Invalid expr node '{s}'", AST_type_to_string(ast->type)), CHECKER, ERROR);
             exit(1);

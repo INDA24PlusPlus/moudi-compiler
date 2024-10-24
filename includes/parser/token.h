@@ -23,6 +23,7 @@
     f(TOKEN_VERTICALLINE) \
     f(TOKEN_INTRINSIC) \
     f(TOKEN_NUMBER) \
+    f(TOKEN_STRING) \
     f(TOKEN_COMMENT) \
     f(TOKEN_LINEBREAK) 
 

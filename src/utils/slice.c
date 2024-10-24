@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Slice init_slice(char * start, size_t length) {
+struct Slice init_slice(const char * start, size_t length) {
     struct Slice slice = {.start = start, .length = length};
     return slice;
 }

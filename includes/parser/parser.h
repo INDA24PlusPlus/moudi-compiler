@@ -19,6 +19,7 @@ struct AST * parser_parse_expr(struct Parser * parser);
 
 struct AST * parser_parse_variable(struct Parser * parser);
 struct AST * parser_parse_number(struct Parser * parser);
+struct AST * parser_parse_string(struct Parser * parser);
 struct AST * parser_parse_operator(struct Parser * parser);
 struct AST * parser_parse_scope(struct Parser * parser);
 

@@ -47,6 +47,10 @@ struct a_number {
     struct Slice value;
 };
 
+struct a_string {
+    struct Slice value;
+};
+
 struct a_for {
     struct AST * condition;
     struct AST * _continue;
@@ -74,6 +78,7 @@ struct a_if {
     f(AST_OP) \
     f(AST_VARIABLE) \
     f(AST_NUMBER) \
+    f(AST_STRING) \
     f(AST_FOR) \
     f(AST_RETURN) \
     f(AST_IF) \
@@ -93,6 +98,7 @@ struct AST {
         struct a_op op;
         struct a_variable variable;
         struct a_number number;
+        struct a_string string;
         struct a_for _for;
         struct a_if _if;
         struct a_return _return;

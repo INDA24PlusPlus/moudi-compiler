@@ -165,6 +165,8 @@ void lexer_parse_id(struct Lexer * lexer) {
 void lexer_parse_int(struct Lexer * lexer) {
     size_t line = lexer->line, pos = lexer->pos;
     char * start_of_token = lexer->src + lexer->index;
+
+    lexer_advance(lexer);
     while (isdigit(lexer->c) || lexer->c == '_') {
         lexer_advance(lexer);
     }
@@ -172,6 +174,21 @@ void lexer_parse_int(struct Lexer * lexer) {
     // not +1 since lexer_advance will always go one more than the id length
     struct Slice token_slice = init_slice(start_of_token, lexer->index - (start_of_token - lexer->src));
     set_token(&lexer->token, token_slice, TOKEN_NUMBER, line, pos);
+}
+
+void lexer_parse_string_literal(struct Lexer * lexer) {
+    size_t line = lexer->line, pos = lexer->pos;
+    char * start_of_token = lexer->src + lexer->index + 1;
+
+    lexer_advance(lexer);
+    while (lexer->c != '"') {
+        println("char: '{c}'", lexer->c);
+        lexer_advance(lexer);
+    }
+    lexer_advance(lexer);
+
+    struct Slice token_slice = init_slice(start_of_token, lexer->index - (start_of_token - lexer->src) - 1);
+    set_token(&lexer->token, token_slice, TOKEN_STRING, line, pos);
 }
 
 void lexer_next_token(struct Lexer * lexer) {
@@ -199,6 +216,8 @@ void lexer_next_token(struct Lexer * lexer) {
             lexer_advance_as(lexer, TOKEN_LPAREN); break;
         case ')':
             lexer_advance_as(lexer, TOKEN_RPAREN); break;
+        case '"':
+            lexer_parse_string_literal(lexer); break;
         case '-':
             lexer_advance_as(lexer, TOKEN_MINUS); break;
         case '+':

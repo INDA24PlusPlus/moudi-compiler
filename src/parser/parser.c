@@ -59,6 +59,16 @@ struct AST * parser_parse_number(struct Parser * parser) {
     return ast;
 }
 
+struct AST * parser_parse_string(struct Parser * parser) {
+    struct AST * ast = init_ast(AST_STRING, parser->current_scope);
+
+    struct a_string * string = &ast->value.string;
+    string->value = parser->lexer.token.value;
+    parser_eat(parser, TOKEN_STRING);
+
+    return ast;
+}
+
 struct AST * parser_parse_declaration(struct Parser * parser) {
     struct AST * ast = init_ast(AST_DECLARATION, parser->current_scope), * node;
     struct a_declaration * decl = &ast->value.declaration;
