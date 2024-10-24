@@ -71,10 +71,24 @@ void generate_call(struct AST * ast) {
 void generate_increment(struct AST * ast) {
     ASSERT1(ast->type == AST_VARIABLE);
     struct a_variable variable = ast->value.variable;
+
     char * var_name_str = slice_to_string(&variable.name);
+
     generate_temp_variable_prefix();
     writef(file, "add %{s}, 1\n", var_name_str);
     writef(file, "%{s} =w copy %_{i}\n", var_name_str, LAST_TEMP_EXPR);
+    
+    free(var_name_str);
+}
+
+void generate_assignment(struct AST * ast, size_t expr_number) {
+    ASSERT1(ast->type == AST_VARIABLE);
+    struct a_variable variable = ast->value.variable;
+
+    char * var_name_str = slice_to_string(&variable.name);
+
+    writef(file, "%{s} =w copy %_{i}\n", var_name_str, expr_number);
+    
     free(var_name_str);
 }
 
@@ -110,6 +124,8 @@ void generate_op(struct AST * ast) {
     }
 
     switch (op.op.key) {
+        case ASSIGNMENT:
+            generate_assignment(op.left, right_expr); break;
         case ADDITION:
             generate_binary_operator("add", left_expr, right_expr); break;
         case EQUAL:

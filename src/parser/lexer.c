@@ -102,8 +102,9 @@ void lexer_parse_operator(struct Lexer * lexer) {
     // arr is an buf keeping track of the indeces of all possible operators matching the string so far and that are longer than current matching
     size_t arr_index = sizeof(op_conversion) / sizeof(op_conversion[0]), arr_size;
     int arr[sizeof(op_conversion) / sizeof(op_conversion[0])] = {0};
-    size_t length = 0, length_found = 0, start_line = lexer->line, start_pos = lexer->pos;
+    size_t offset = 0, found_length = 0, start_line = lexer->line, start_pos = lexer->pos;
     char c = lexer->src[lexer->index - 1];
+
 
     while (is_characther_operator(c)) {
         arr_size = arr_index; // number of possible results
@@ -112,38 +113,38 @@ void lexer_parse_operator(struct Lexer * lexer) {
         for (int i = 0; i < arr_size; ++i) {
             int op_index = (arr[i] != 0) ? arr[i] : i;
             op = op_conversion[op_index];
-            if (c == op.str[length]) {
-                // if operator has more characthers
-                if (op.str[length + 1]) {
-                    arr[arr_index++] = op_index;
+            if (c == op.str[offset]) {
+                // if operator has no more characthers
+                if (op.str[offset + 1] == '\0') {
+                    found_length = offset + 1;
                 } else {
-                    length_found = length + 1;
+                    arr[arr_index++] = op_index;
                 }
-            } else if (op.enclosed && c == op.str[op.enclosed_offset + length]) {
-                if (op.str[op.enclosed_offset + length + 1]) {
-                    arr[arr_index++] = op_index;
+            } else if (op.enclosed && c == op.str[op.enclosed_offset + offset]) {
+                if (op.str[op.enclosed_offset + offset + 1] == '\0') {
+                    found_length = offset + 1;
                 } else {
-                    length_found = length + 1;
+                    arr[arr_index++] = op_index;
                 }
             }
         }
 
-        c = lexer->src[lexer->index + length];
-        length += 1;
+        c = lexer->src[lexer->index + offset];
+        offset += 1;
     }
 
-    struct Slice slice = init_slice(start_of_token, length_found);
 
-    lexer_update(lexer, length_found - 1);
+    lexer_update(lexer, found_length - 1);
 
     // if length is 0 then there was no match as length is the length of an existing operator
-    if (length_found == 0) {
+    if (found_length == 0) {
         struct Slice slice = init_slice(start_of_token, lexer->index - (start_of_token - lexer->src));
         logger_log(format("{2i::} Invalid operator '{s}'", lexer->line, lexer->pos, slice_to_string(&slice)), LEXER, ERROR);
         ASSERT1(0);
     }
     
-    set_token(&lexer->token, init_slice(start_of_token, length_found), TOKEN_OP, start_line, start_pos);
+    struct Slice slice = init_slice(start_of_token, found_length);
+    set_token(&lexer->token, slice, TOKEN_OP, start_line, start_pos);
 }
 
 void lexer_parse_id(struct Lexer * lexer) {

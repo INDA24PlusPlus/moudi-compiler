@@ -38,6 +38,11 @@ void checker_check_op(struct AST * ast) {
             checker_check_expr_node(op.right);
             return;
         }
+    } else if (op.op.key == ASSIGNMENT) {
+        if (op.left->type != AST_VARIABLE) {
+            logger_log("LHS of assignment must be an immediate variable", CHECKER, ERROR);
+            exit(1);
+        }
     }
 
     if (op.left != NULL) {

@@ -8,20 +8,24 @@
 
 struct Operator * str_to_operator(struct Slice str, enum OP_mode mode, char * enclosed_flag) {
     const char * op_str;
+    size_t op_len;
     for (int i = 0; i < sizeof(op_conversion) / sizeof(op_conversion[0]); ++i) {
         op_str = op_conversion[i].str;
+        op_len = op_conversion[i].enclosed_offset;
 
         if (op_conversion[i].enclosed == ENCLOSED && op_conversion[i].mode == mode) {
-            if (!strncmp(str.start, op_str, str.length)) {
+            if (op_str[str.length] == '\0' && !strncmp(str.start, op_str, str.length)) {
                 *enclosed_flag = 0;
                 return &op_conversion[i];
-            } else if (!strncmp(str.start, op_str + strlen(op_str) + 1, str.length)) {
+            }
+            if (op_str[op_len + str.length] == '\0' && !strncmp(str.start, op_str + op_len, str.length)) {
                 *enclosed_flag = 1;
                 return &op_conversion[i];
             }
         }
 
-        if ((mode == OP_TYPE_ANY || op_conversion[i].mode == mode) && !strncmp(str.start, op_str, str.length)) {
+        if ((mode == OP_TYPE_ANY || op_conversion[i].mode == mode) && op_str[str.length] == '\0' && !strncmp(str.start, op_str, str.length)) {
+            println("str({i}): '{s}'", str.length, op_str);
             return &op_conversion[i];
         }
     }
@@ -40,6 +44,8 @@ struct Operator * get_operator(struct Slice str, struct Token * token, enum OP_m
         print("{s}\n", token_to_string(token));
         ASSERT1(0);
     }
+
+    println("str: '{s}', key: {i}", slice_to_string(&str), op->key);
 
     return op;
 }
