@@ -9,6 +9,8 @@
 #include "utils/slice.h"
 #include "codegen/intrinsics.h"
 
+char error = 0;
+
 void checker_check_return(struct AST * ast) {
     ASSERT1(ast != NULL);
     ASSERT1(ast->type == AST_RETURN);
@@ -25,7 +27,8 @@ void checker_check_op(struct AST * ast) {
     if (op.op.key == CALL) {
         if (op.left->type != AST_VARIABLE) {
             logger_log("Left operand must be a symbol", CHECKER, ERROR);
-            exit(1);
+            error = 1;
+            return;
         } else if (op.left->value.variable.name.start[0] == '#') {
             // check if it is a valid intrinsic
             struct Slice name = op.left->value.variable.name;
@@ -33,7 +36,8 @@ void checker_check_op(struct AST * ast) {
                 ast->value.op.left->value.variable.name = init_slice(print_intrinsic_to_c_func, sizeof(print_intrinsic_to_c_func));
             } else {
                 logger_log(format("Invalid intrinsic: \"{s}\"", slice_to_string(&name)), CHECKER, ERROR);
-                exit(1);
+                error = 1;
+                return;
             }
 
             ASSERT1(op.right->type == AST_EXPR);
@@ -53,7 +57,8 @@ void checker_check_op(struct AST * ast) {
     } else if (op.op.key == ASSIGNMENT) {
         if (op.left->type != AST_VARIABLE) {
             logger_log("LHS of assignment must be an immediate variable", CHECKER, ERROR);
-            exit(1);
+            error = 1;
+            return;
         }
     }
 
@@ -70,6 +75,8 @@ void checker_check_variable(struct AST * ast) {
 
     if (!find_symbol_slice(ast->scope, &variable.name)) {
         logger_log(format("Unknown symbol '{s}'.\n" GREY "Tips: Did you forget to declare it as a variable?" RESET, slice_to_string(&variable.name)), CHECKER, ERROR);
+        error = 1;
+        return;
     }
 }
 
@@ -120,7 +127,8 @@ void checker_check_expr_node(struct AST * ast) {
         case AST_NUMBER: break;
         case AST_STRING:
             logger_log("String literals are only allowed in intrinsic function calls", CHECKER, ERROR);
-            exit(1);
+            error = 1;
+            return;
         default:
             logger_log(format("Invalid expr node '{s}'", AST_type_to_string(ast->type)), CHECKER, ERROR);
             exit(1);
@@ -158,7 +166,8 @@ void checker_check_scope(struct AST * ast) {
             case AST_RETURN:
                 if (i + 1 != scope->nodes.size) {
                     logger_log("Return is only allowed at the end of a scope", CHECKER, ERROR);
-                    exit(1);
+                    error = 1;
+                    break;
                 }
                 scope->returns = 1;
                 checker_check_return(node); break;
@@ -210,5 +219,9 @@ void checker_check(struct AST * ast) {
 
     for (size_t i = 0; i < length; ++i) {
         checker_check_function(list_at(&root->nodes, i));
+    }
+
+    if (error) {
+        exit(1);
     }
 }

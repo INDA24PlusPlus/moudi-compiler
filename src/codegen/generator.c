@@ -46,7 +46,6 @@ void generate_string_data(struct AST * ast) {
 }
 
 void generate_call(struct AST * ast) {
-    writef(file, "# start of call\n");
     struct a_op op = ast->value.op;
 
     ASSERT1(op.left != NULL);
@@ -118,7 +117,6 @@ void generate_binary_operator(const char * operator, size_t lhs, size_t rhs) {
 }
 
 void generate_op(struct AST * ast) {
-    writef(file, "# start of op\n");
     struct a_op op = ast->value.op;
 
     switch (op.op.key) {
@@ -310,8 +308,4 @@ void generate_qed(struct AST * ast) {
 
     writef(file, "\n# Data:\n{s}", data->_ptr);
     fclose(file);
-
-    size_t length = 0;
-    puts(read_file("out.qbe", &length));
-
 }

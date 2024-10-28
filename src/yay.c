@@ -25,15 +25,17 @@ void yay_compile(char * filepath) {
          * gen_time;
 
     start_timer();
+
     struct AST * ast = parser_parse(filepath);
+
     time = stop_timer();
     total += time;
     asprintf(&parser_time, "Time for parser:\t%.3fms", (double)time / 1000);
 
-    /* print_ast_tree(ast); */
-
     start_timer();
+
     checker_check(ast);
+    
     time = stop_timer();
     total += time;
     asprintf(&checker_time, "Time for checker:\t%.3fms", (double)time / 1000);
@@ -41,7 +43,9 @@ void yay_compile(char * filepath) {
     print_ast_tree(ast);
 
     start_timer();
+
     generate_qed(ast);
+    
     time = stop_timer();
     total += time;
     asprintf(&gen_time, "Time for generator:\t%.3fms", (double)time / 1000);

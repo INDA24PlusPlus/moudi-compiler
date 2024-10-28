@@ -182,7 +182,6 @@ void lexer_parse_string_literal(struct Lexer * lexer) {
 
     lexer_advance(lexer);
     while (lexer->c != '"') {
-        println("char: '{c}'", lexer->c);
         lexer_advance(lexer);
     }
     lexer_advance(lexer);
