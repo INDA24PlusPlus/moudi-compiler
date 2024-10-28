@@ -18,7 +18,7 @@ unsigned long stop_timer() {
     return 1000000 * (t_stop.tv_sec - t_start.tv_sec) + (t_stop.tv_usec - t_start.tv_usec);
 }
 
-void yay_compile(char * filepath) {
+void yay_compile(char * filepath, char ast_flag, char time_flag) {
     long time = 0, total = 0;
     char * parser_time,
          * checker_time,
@@ -40,7 +40,9 @@ void yay_compile(char * filepath) {
     total += time;
     asprintf(&checker_time, "Time for checker:\t%.3fms", (double)time / 1000);
 
-    print_ast_tree(ast);
+    if (ast_flag) {
+        print_ast_tree(ast);
+    }
 
     start_timer();
 
@@ -55,11 +57,13 @@ void yay_compile(char * filepath) {
         system("cc out.s");
     }
 
-    puts("-------------------------------------");
-    puts(parser_time);
-    puts(checker_time);
-    puts(gen_time);
-    puts("-------------------------------------");
-    printf("Total: %.3fms\n", (double)total / 1000);
+    if (time_flag) {
+        puts("-------------------------------------");
+        puts(parser_time);
+        puts(checker_time);
+        puts(gen_time);
+        puts("-------------------------------------");
+        printf("Total: %.3fms\n", (double)total / 1000);
+    }
 
 }

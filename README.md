@@ -9,7 +9,11 @@
 # Run
 
 - Build the compiler
-- ./start.sh PATH/TO/YAY/FILE
+- ./start.sh {SOURCE CODE PATH} [--ast | --time]
+
+# Flags
+- ast: Print out the constructed AST
+- time: Print out the time it took for each compilation pass
 
 # BNF
 <program> ::= <function>+
@@ -18,11 +22,11 @@
 <function_arg_list> ::= "(" <function_arg>* ")"
 <function_arg> ::= <opt_whitespace> <ID> <opt_whitespace> "," <function_arg> | <opt_whitespace> <ID> <opt_whitespace>
 
-<scope> ::= "{" <newline>* <scope_element>* <newline>* "}"
+<scope> ::= <opt_whitespace> "{" <newline>* <scope_element>* <newline>* "}" <opt_whitespace>
 <scope_element> ::= <newline>* <statement> <newline>+
 <statement> ::= <expr> | <declaration> | <for> | <if> | <ret>
 
-<expr> ::= <value> | <binary> | <unary>
+<expr> ::= "#" <ID> | <value> | <string> | <binary> | <unary>
 <binary> ::= <opt_whitespace> <expr> <opt_whitespace> <operator>+ <opt_whitespace> <expr>
 <unary> ::= <opt_whitespace> <expr> <opt_whitespace> <operator>+ | <opt_whitespace> <operator>+ <opt_whitespace> <expr> <opt_whitespace>
 
@@ -35,14 +39,15 @@
 <for_tail> ::= <expr> <opt_whitespace> ":" <opt_whitespace> <expr> <opt_whitespace> <scope> | <expr> <opt_whitespace> <scope>
 <ret> ::= "return" <whitespace> <expr>
 
+<string> ::= "\"" (<digit> | <letter>)* "\""
 <value> ::= <ID> | <digit>+
 <ID> ::= <letter> <letter_or_digit_or_underscore>*
 
 <letter_or_digit_or_underscore> ::= <letter_or_digit> | "_"
 <letter_or_digit> ::= <letter> | <digit>
 <opt_whitespace> ::= " "*
-<whitespace> ::= " " <whitespace> | " "
+<whitespace> ::= " "+
 <newline> ::= "\n"
 <operator> ::= "+" | "-" | "*" | "/" | "|" | "=" | "<" | "<" | "(" | ")"
-<letter> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" 
-<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+<letter> ::= [A-z]
+<digit> ::= [0-9]

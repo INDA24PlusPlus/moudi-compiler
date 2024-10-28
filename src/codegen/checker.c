@@ -28,7 +28,6 @@ void checker_check_op(struct AST * ast) {
         if (op.left->type != AST_VARIABLE) {
             logger_log("Left operand must be a symbol", CHECKER, ERROR);
             error = 1;
-            return;
         } else if (op.left->value.variable.name.start[0] == '#') {
             // check if it is a valid intrinsic
             struct Slice name = op.left->value.variable.name;
@@ -37,7 +36,6 @@ void checker_check_op(struct AST * ast) {
             } else {
                 logger_log(format("Invalid intrinsic: \"{s}\"", slice_to_string(&name)), CHECKER, ERROR);
                 error = 1;
-                return;
             }
 
             ASSERT1(op.right->type == AST_EXPR);
@@ -58,7 +56,6 @@ void checker_check_op(struct AST * ast) {
         if (op.left->type != AST_VARIABLE) {
             logger_log("LHS of assignment must be an immediate variable", CHECKER, ERROR);
             error = 1;
-            return;
         }
     }
 
@@ -76,7 +73,6 @@ void checker_check_variable(struct AST * ast) {
     if (!find_symbol_slice(ast->scope, &variable.name)) {
         logger_log(format("Unknown symbol '{s}'.\n" GREY "Tips: Did you forget to declare it as a variable?" RESET, slice_to_string(&variable.name)), CHECKER, ERROR);
         error = 1;
-        return;
     }
 }
 
@@ -128,7 +124,6 @@ void checker_check_expr_node(struct AST * ast) {
         case AST_STRING:
             logger_log("String literals are only allowed in intrinsic function calls", CHECKER, ERROR);
             error = 1;
-            return;
         default:
             logger_log(format("Invalid expr node '{s}'", AST_type_to_string(ast->type)), CHECKER, ERROR);
             exit(1);
@@ -167,7 +162,6 @@ void checker_check_scope(struct AST * ast) {
                 if (i + 1 != scope->nodes.size) {
                     logger_log("Return is only allowed at the end of a scope", CHECKER, ERROR);
                     error = 1;
-                    break;
                 }
                 scope->returns = 1;
                 checker_check_return(node); break;
