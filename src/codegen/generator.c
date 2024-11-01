@@ -9,6 +9,7 @@
 #include "parser/operators.h"
 #include "utils/slice.h"
 #include "utils/string.h"
+#include <stdlib.h>
 
 FILE * file = NULL;
 String * data;
@@ -87,16 +88,41 @@ void generate_call(struct AST * ast) {
     writef(file, ")\n");
 }
 
-void generate_increment(struct AST * ast) {
-    ASSERT1(ast->type == AST_VARIABLE);
+void generate_increment(struct AST * ast, char is_pre) {
+    ASSERT(ast->type == AST_VARIABLE, "Decrement can only operate on a variable");
     struct a_variable variable = ast->value.variable;
 
     char * var_name_str = slice_to_string(&variable.name);
 
     generate_temp_variable_prefix();
     writef(file, "add %{s}, 1\n", var_name_str);
-    writef(file, "%{s} =l copy %_{i}\n", var_name_str, LAST_TEMP_EXPR);
+    if (is_pre) {
+        writef(file, "%{s} =l copy %_{i}\n", var_name_str, LAST_TEMP_EXPR);
+    } else {
+        generate_temp_variable_prefix();
+        writef(file, "copy %{s}\n", var_name_str);
+        writef(file, "%{s} =l copy %_{i}\n", var_name_str, LAST_TEMP_EXPR - 1);
+    }
     
+    free(var_name_str);
+}
+
+void generate_decrement(struct AST * ast, char is_pre) {
+    ASSERT(ast->type == AST_VARIABLE, "Decrement can only operate on a variable");
+    struct a_variable variable = ast->value.variable;
+
+    char * var_name_str = slice_to_string(&variable.name);
+
+    generate_temp_variable_prefix();
+    writef(file, "sub %{s}, 1\n", var_name_str);
+    if (is_pre) {
+        writef(file, "%{s} =l copy %_{i}\n", var_name_str, LAST_TEMP_EXPR);
+    } else {
+        generate_temp_variable_prefix();
+        writef(file, "copy %{s}\n", var_name_str);
+        writef(file, "%{s} =l copy %_{i}\n", var_name_str, LAST_TEMP_EXPR - 1);
+    }
+
     free(var_name_str);
 }
 
@@ -125,7 +151,19 @@ void generate_op(struct AST * ast) {
         case PARENTHESES:
             return generate_expression(op.right);
         case INCREMENT:
-            return generate_increment(op.right);
+            if (op.op.mode == UNARY_PRE) {
+                return generate_increment(op.right, 1);
+            } else if (op.op.mode == UNARY_POST) {
+                return generate_increment(op.right, 0);
+            }
+            ASSERT1(0);
+        case DECREMENT:
+            if (op.op.mode == UNARY_PRE) {
+                return generate_decrement(op.right, 1);
+            } else if (op.op.mode == UNARY_POST) {
+                return generate_decrement(op.right, 0);
+            }
+            ASSERT1(0);
     }
 
     size_t left_expr = -1;
@@ -146,12 +184,30 @@ void generate_op(struct AST * ast) {
             generate_assignment(op.left, right_expr); break;
         case ADDITION:
             generate_binary_operator("add", left_expr, right_expr); break;
+        case SUBTRACTION:
+            generate_binary_operator("sub", left_expr, right_expr); break;
+        case MULTIPLICATION:
+            generate_binary_operator("mul", left_expr, right_expr); break;
+        case DIVISION:
+            generate_binary_operator("div", left_expr, right_expr); break;
+        case REMAINDER:
+            generate_binary_operator("rem", left_expr, right_expr); break;
         case EQUAL:
-            generate_binary_operator("ceqw", left_expr, right_expr); break;
+            generate_binary_operator("ceql", left_expr, right_expr); break;
+        case NOT_EQUAL:
+            generate_binary_operator("cnel", left_expr, right_expr); break;
         case LOGICAL_OR:
             generate_binary_operator("or", left_expr, right_expr); break;
+        case LOGICAL_AND:
+            generate_binary_operator("and", left_expr, right_expr); break;
         case LESS_THAN:
             generate_binary_operator("csltl", left_expr, right_expr); break;
+        case LESS_EQUAL_TO:
+            generate_binary_operator("cslel", left_expr, right_expr); break;
+        case GREATER_THAN:
+            generate_binary_operator("csgtl", left_expr, right_expr); break;
+        case GREATER_EQUAL_TO:
+            generate_binary_operator("csgel", left_expr, right_expr); break;
         default:
              ASSERT(0, format("Unimplemented operator generation: '{s}'", ast_to_string(ast)));
     }

@@ -1,6 +1,48 @@
-fn main() {
-    let a = 2
-    a = a + a + (a = 3)
+fn print_bool(cmp) {
+    if cmp {
+        #print("True\n")
+    } else {
+        #print("False\n")
+    }
+    return 0
+}
 
-    return a
+fn main() {
+    let add = 10 + 10
+    #print("10 + 10 = %d | ", add)
+    print_bool(add == 20)
+
+    let sub = 10 - 10
+    #print("10 - 10 = %d | ", add)
+    print_bool(sub == 0)
+
+    let mult = 10 * 10
+    #print("10 * 10 = %d | ", mult)
+    print_bool(mult == 100)
+
+    let div = 10 / 10
+    #print("10 / 10 = %d | ", div)
+    print_bool(div == 1)
+
+    let pre_inc_1 = 10
+    let pre_inc_2 = pre_inc_1
+    #print("++(10) = %d | ", ++pre_inc_1)
+    print_bool((++pre_inc_2) == 11)
+
+    let post_inc_1 = 10
+    let post_inc_2 = post_inc_1
+    #print("(10)++ = %d | ", post_inc_1++)
+    print_bool((post_inc_2++) == 10)
+
+    let pre_dec_1 = 10
+    let pre_dec_2 = pre_dec_1
+    #print("--(10) = %d | ", --pre_dec_1)
+    print_bool((--pre_dec_2) == 9)
+
+    let post_dec_1 = 10
+    let post_dec_2 = post_dec_1
+    #print("(10)-- = %d | ", post_dec_1--)
+    print_bool((post_dec_2--) == 10)
+
+    return 0
 }
