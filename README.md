@@ -1,21 +1,22 @@
 # Build
 
-- git clone https://github.com/INDA24PlusPlus/moudi-compiler
-- cd moudi-compiler
-- git submodule init
-- git submodule update
-- ./start.sh c
+1. git clone https://github.com/INDA24PlusPlus/moudi-compiler
+2. cd moudi-compiler
+3. git submodule init
+4. git submodule update
+5. ```./start.sh c```
 
 # Run
 
-- Build the compiler
-- ./start.sh {SOURCE CODE PATH} [--ast | --time]
+1. Build the compiler
+2. ```./start.sh {SOURCE CODE PATH} [--ast | --time]```
 
 # Flags
 - ast: Print out the constructed AST
 - time: Print out the time it took for each compilation pass
 
 # BNF
+```code
 <program> ::= <function>+
 
 <function> ::= "fn" <whitespace>+ <ID> <opt_whitespace> <function_arg_list> <opt_whitespace> <scope>
@@ -51,3 +52,4 @@
 <operator> ::= "+" | "-" | "*" | "/" | "|" | "=" | "<" | "<" | "(" | ")"
 <letter> ::= [A-z]
 <digit> ::= [0-9]
+```
